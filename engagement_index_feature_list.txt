@@ -1,0 +1,109 @@
+================================================================================
+ENGAGEMENT INDEX MODEL — FEATURE LIST
+Generated from: engagement_index_feature_engineering.py
+Base file:      202411_to_202603_dtc_engagement_index.parquet
+Portal file:    portal_engagement_snapshot.csv
+Total features: 46 engineered features + 3 target columns
+================================================================================
+
+── STATIC OUTPUT COLUMNS ───────────────────────────────────────────────────────
+  account_number          Unique identifier for the customer
+  account_id              Salesforce account identifier
+  age                     Age of the member (nulls filled with 75)
+  anchor_month            Feature window anchor month (YYYY-MM)
+
+── PILLAR 1: DEVICE ENGAGEMENT ─────────────────────────────────────────────────
+  buttons_count_6m        Sum of buttons_count over last 6 months
+  buttons_count_12m       Sum of buttons_count over last 12 months
+  buttons_trend           buttons_count_6m / buttons_count_12m (acceleration ratio)
+  avg_daily_steps_6m      Mean of avg_daily_steps over last 6 months
+  avg_daily_steps_12m     Mean of avg_daily_steps over last 12 months
+  steps_trend             avg_daily_steps_6m / avg_daily_steps_12m (trend ratio)
+  steps_active_flag_6m    1 if avg_daily_steps > 2000 in any month in last 6m, else 0
+
+── PILLAR 2: CARE / SYSTEM INTERACTION ─────────────────────────────────────────
+  monitoring_outreach_6m      Sum of monitoring_outreach_count over last 6 months
+  monitoring_outreach_12m     Sum of monitoring_outreach_count over last 12 months
+  case_count_6m               Sum of case_count over last 6 months
+  case_count_12m              Sum of case_count over last 12 months
+  outreach_trend              monitoring_outreach_6m / monitoring_outreach_12m
+  total_care_interactions_6m  monitoring_outreach_6m + case_count_6m
+
+── PILLAR 3: EMERGENCY / RISK EVENTS ───────────────────────────────────────────
+  had_emergency_event_6m      1 if any er_dispatch_count > 0 or fall_count > 0 in last 6m
+  had_emergency_event_12m     1 if any er_dispatch_count > 0 or fall_count > 0 in last 12m
+  assist_event_flag_6m        1 if assist_count > 0 in any month in last 6m
+  help_sent_flag_6m           1 if help_sent_count > 0 in any month in last 6m
+  emergency_count_6m          Sum of (er_dispatch_count + assist_count + fall_count) over last 6m
+  dispatch_completion_rate_6m 1 - (dispatch_cancelled_count / er_dispatch_count) over last 6m
+
+── PILLAR 4: COMMUNICATION / EMAIL ENGAGEMENT ──────────────────────────────────
+  email_active_flag_6m        1 if any email_open_count > 0 in last 6 months
+  email_active_flag_12m       1 if any email_open_count > 0 in last 12 months
+  email_open_rate_avg_6m      Mean of email_open_rate_pct over last 6 months
+  email_click_rate_avg_6m     Mean of email_click_rate_pct over last 6 months
+  email_click_to_open_ratio_6m email_click_count / email_open_count over last 6 months
+  email_engagement_score_6m   Ordinal score: 0=no delivery, 1=delivered, 2=opened, 3=clicked
+  months_since_last_email_click Months between email_last_click_month and anchor_month
+  months_since_last_email_open  Months between email_last_open_month and anchor_month
+  email_never_engaged_flag    1 if zero email opens across entire 12-month window
+
+── PILLAR 5: PORTAL ENGAGEMENT ─────────────────────────────────────────────────
+  has_active_portal_flag      Direct from portal file (1=active, 0=inactive)
+  portal_days_since_last_login Days since last portal login (snapshot from portal file)
+  portal_recency_score        Bucketed recency: <7d=5, <30d=4, <90d=3, <180d=2, <365d=1, else=0
+  portal_active_6m_flag       1 if portal_days_since_last_login <= 180
+  portal_active_30d_flag      1 if portal_days_since_last_login <= 30
+
+── PILLAR 6: RECENCY & CONSISTENCY (CROSS-PILLAR) ──────────────────────────────
+  active_months_6m            Count of months with any non-zero activity in last 6m
+  active_months_12m           Count of months with any non-zero activity in last 12m
+  active_months_ratio_6m      active_months_6m / 6  (normalized 0.0–1.0)
+  consecutive_inactive_months Streak of zero-activity months ending at anchor_month
+  months_since_any_device_event Months since last month with buttons_count > 0 or assist_count > 0
+  tenure_months               Total number of distinct obs_months the member appears in data
+
+── PILLAR 7: MEMBER PROFILE (STATIC CONTEXT) ───────────────────────────────────
+  product_name_encoded        Integer encoding of cleaned product_name (0 = unknown)
+  has_product_name_flag       1 if product_name is not null, else 0
+  product_engagement_profile  Device type bucket: 0=Unknown, 1=Mobile, 2=In-home, 3=Wearable
+
+── TARGET COLUMNS ──────────────────────────────────────────────────────────────
+  target_engagement_t30d  Engagement tier at anchor + 1 month (0=Disengaged, 1=Low, 2=Moderate, 3=High)
+  target_engagement_t60d  Engagement tier at anchor + 2 months
+  target_engagement_t90d  Engagement tier at anchor + 3 months
+
+── TARGET TIER DEFINITIONS ─────────────────────────────────────────────────────
+  Tier 3 — Highly Engaged:
+    active_pillar_count >= 3
+    AND care_active = 1 (monitoring_outreach > 2 OR case_count > 0)
+    AND (device_active = 1 OR portal_active = 1)
+    AND emergency_flag = 0
+
+  Tier 2 — Moderately Engaged:
+    (active_pillar_count >= 3 AND emergency_flag = 1)
+    OR (active_pillar_count = 2 AND care_active = 1)
+    OR (active_pillar_count = 2 AND device_active = 1 AND portal_active = 1)
+
+  Tier 1 — Low Engagement:
+    (active_pillar_count = 2 AND care_active = 0)
+    OR (active_pillar_count = 1 AND emergency_flag = 0)
+    OR (active_pillar_count = 0 AND emergency_flag = 1)
+
+  Tier 0 — Disengaged:
+    active_pillar_count = 0 AND emergency_flag = 0
+    OR hard_disengaged override:
+      consecutive_inactive_months >= 3
+      OR (portal_days > 365 AND email_open_12m = 0 AND buttons_6m = 0)
+
+  NaN — No label data available for that future month
+
+── VALID ANCHOR MONTHS & TARGET AVAILABILITY ────────────────────────────────────
+  Anchor     t30d (label)   t60d (label)   t90d (label)
+  2025-11    2025-12   ✓    2026-01   ✓    2026-02   ✓
+  2025-12    2026-01   ✓    2026-02   ✓    2026-03   ✓
+  2026-01    2026-02   ✓    2026-03   ✓    2026-04   ✗ (NaN)
+  2026-02    2026-03   ✓    2026-04   ✗    2026-05   ✗ (NaN)
+  2026-03    2026-04   ✗    2026-05   ✗    2026-06   ✗ (NaN — scoring only)
+
+================================================================================
