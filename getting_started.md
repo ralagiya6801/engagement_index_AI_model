@@ -58,14 +58,12 @@ python engagement_index_feature_engineering.py \
 **Output files:**
 
 - `engagement_index_feature_with_target_30d.parquet` — Features + 30d target
-- `engagement_index_feature_with_target_60d.parquet` — Features + 60d target
-- `engagement_index_feature_with_target_90d.parquet` — Features + 90d target
 
 ---
 
 ## Step 2: Train the Model
 
-Train the engagement model for your desired prediction horizon (30d, 60d, or 90d).
+Train the engagement model for your desired prediction horizon (30d).
 
 ### 30-day horizon
 
@@ -74,21 +72,6 @@ python engagement_index_training_30d.py \
     --train_file engagement_index_feature_with_target_30d.parquet \
     --anchor_month 01_2026
 ```
-
-### 60-day horizon
-
-```bash
-python engagement_index_training_60d.py \
-    --train_file engagement_index_feature_with_target_60d.parquet \
-    --anchor_month 01_2026
-```
-
-### 90-day horizon
-
-```bash
-python engagement_index_training_90d.py \
-    --train_file engagement_index_feature_with_target_90d.parquet \
-    --anchor_month 01_2026
 ```
 
 **Optional arguments:**
@@ -131,22 +114,6 @@ python engagement_index_scoring_30d.py \
     --anchor_month 01_2026
 ```
 
-### 60-day scoring
-
-```bash
-python engagement_index_scoring_60d.py \
-    --model_file engagement_index_model_60d_03_2026.pkl \
-    --score_file engagement_index_feature.parquet \
-    --anchor_month 01_2026
-```
-
-### 90-day scoring
-
-```bash
-python engagement_index_scoring_90d.py \
-    --model_file engagement_index_model_90d_04_2026.pkl \
-    --score_file engagement_index_feature.parquet \
-    --anchor_month 01_2026
 ```
 
 **Optional arguments:**
@@ -186,8 +153,6 @@ All scripts use `MM_YYYY` format for anchor month (e.g., `01_2026` for January 2
 
 The **predict month** is automatically derived:
 - 30d model → anchor + 1 month
-- 60d model → anchor + 2 months
-- 90d model → anchor + 3 months
 
 ---
 
