@@ -26,12 +26,8 @@ engagement_index_AI_model/
 ├── engagement_index_feature_list.txt         # Full feature catalog with descriptions
 │
 ├── engagement_index_training_30d.py          # Model training script — 30-day horizon
-├── engagement_index_training_60d.py          # Model training script — 60-day horizon
-├── engagement_index_training_90d.py          # Model training script — 90-day horizon
 │
 ├── engagement_index_scoring_30d.py           # Scoring script — 30-day horizon
-├── engagement_index_scoring_60d.py           # Scoring script — 60-day horizon
-├── engagement_index_scoring_90d.py           # Scoring script — 90-day horizon
 │
 ├── 202411_to_202603_dtc_engagement_index.parquet  # Base feature data (Nov 2024 – Mar 2026)
 │
@@ -54,8 +50,6 @@ engagement_index_feature_engineering.py
 Engineered Feature File (with target columns)
         │
         ├──▶ engagement_index_training_30d.py  ──▶ Model artifact (.pkl) + Validation reports
-        ├──▶ engagement_index_training_60d.py  ──▶ Model artifact (.pkl) + Validation reports
-        └──▶ engagement_index_training_90d.py  ──▶ Model artifact (.pkl) + Validation reports
                                                               │
                                                               ▼
                                                engagement_index_scoring_30d/60d/90d.py
@@ -106,13 +100,13 @@ See [`engagement_index_feature_list.txt`](engagement_index_feature_list.txt) for
 
 ## Valid Anchor Months & Target Availability
 
-| Anchor  | t30d Label | t60d Label | t90d Label |
-|---------|------------|------------|------------|
-| 2025-11 | 2025-12 ✓  | 2026-01 ✓  | 2026-02 ✓  |
-| 2025-12 | 2026-01 ✓  | 2026-02 ✓  | 2026-03 ✓  |
-| 2026-01 | 2026-02 ✓  | 2026-03 ✓  | 2026-04 ✗  |
-| 2026-02 | 2026-03 ✓  | 2026-04 ✗  | 2026-05 ✗  |
-| 2026-03 | 2026-04 ✗  | 2026-05 ✗  | 2026-06 ✗  |
+| Anchor  | t30d Label 
+|---------|------------
+| 2025-11 | 2025-12 ✓  
+| 2025-12 | 2026-01 ✓  
+| 2026-01 | 2026-02 ✓  
+| 2026-02 | 2026-03 ✓  
+| 2026-03 | 2026-04 ✗  
 
 ---
 
